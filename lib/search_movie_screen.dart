@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:movie_pp/widgets/reusableTextWidget.dart';
 import 'package:movie_pp/widgets/reusableTitleWidget.dart';
 import 'package:http/http.dart' as http;
+import 'package:shimmer/shimmer.dart';
 
 import 'movie_detail_screen.dart';
 
@@ -107,8 +108,59 @@ class _SearchMovieScreenState extends State<SearchMovieScreen> {
                       : 'All Movies'),
 
               isSearching == true
-                  ? const Center(
-                      child: CircularProgressIndicator(),
+                  ? Shimmer.fromColors(
+                      baseColor: Colors.grey,
+                      highlightColor: Colors.white38,
+                      child: SizedBox(
+                        height: 600,
+                        child: GridView.builder(
+                          itemCount: 10,
+                          gridDelegate:
+                              const SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: 3),
+                          itemBuilder: (context, index) {
+                            return Padding(
+                              padding: const EdgeInsets.all(4.0),
+                              child: Column(
+                                children: [
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(10),
+                                    child: widget.getAllMovies[index]
+                                                ['backdrop_path'] !=
+                                            null
+                                        ? Image.network(
+                                            imagePath +
+                                                widget.getAllMovies[index]
+                                                        ['backdrop_path']
+                                                    .toString(),
+                                            width: 100,
+                                            height: 70,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : Icon(
+                                            Icons.movie,
+                                            size: 60,
+                                            color: Colors.grey.shade800,
+                                          ),
+                                  ),
+                                  ReusableTextWidget(
+                                    width: 80,
+                                    fontSize: 7,
+                                    title: widget.getAllMovies[index]
+                                        ['original_title'],
+                                  ),
+                                  ReusableTextWidget(
+                                    width: 80,
+                                    fontSize: 7,
+                                    title: widget.getAllMovies[index]
+                                        ['release_date'],
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
                     )
                   : (movieDetails.toString() != 'null' &&
                           movieDetails.isNotEmpty)

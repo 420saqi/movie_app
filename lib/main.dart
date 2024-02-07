@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import 'package:flutter/material.dart';
-import 'package:movie_pp/filter_movie_screen.dart';
+import 'package:movie_pp/favourite_movies_screen.dart';
 
 import 'package:movie_pp/movie_detail_screen.dart';
 import 'package:movie_pp/provider/movie_provider.dart';
@@ -10,6 +10,7 @@ import 'package:movie_pp/search_movie_screen.dart';
 import 'package:movie_pp/widgets/reusableTextWidget.dart';
 import 'package:movie_pp/widgets/reusableTitleWidget.dart';
 import 'package:provider/provider.dart';
+import 'package:shimmer/shimmer.dart';
 
 void main() {
   runApp(const MyApp());
@@ -146,6 +147,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final size = MediaQuery.of(context).size;
     return Scaffold(
         backgroundColor: Colors.grey.shade900,
         appBar: AppBar(
@@ -155,10 +157,10 @@ class _MyHomePageState extends State<MyHomePage> {
             IconButton(
                 onPressed: () {
                   Navigator.of(context).push(MaterialPageRoute(
-                    builder: (context) => FilterMovieScreen(),
+                    builder: (context) => FavouriteMoviesScreen(),
                   ));
                 },
-                icon: const Icon(Icons.filter_alt_rounded)),
+                icon: const Icon(Icons.favorite_outline_rounded)),
             Padding(
               padding: const EdgeInsets.only(right: 8.0),
               child: IconButton(
@@ -186,10 +188,106 @@ class _MyHomePageState extends State<MyHomePage> {
             future: getMoviesFromApi(),
             builder: (context, snapshot) {
               if (snapshot.data.toString() == 'null') {
-                return const Center(
-                  child: CircularProgressIndicator(),
-                );
+                return Shimmer.fromColors(
+                    baseColor: Colors.grey,
+                    highlightColor: Colors.white38,
+                    child: Column(
+                      children: [
+                        const ReusableTitleWidget(title: 'Trending Movies'),
+                        Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 8.0),
+                            child: SizedBox(
+                              height: 150,
+                              width: double.infinity,
+                              child: ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: 5,
+                                itemBuilder: (context, index) {
+                                  return Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Column(
+                                      children: [
+                                        ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                          child: Icon(
+                                            Icons.movie,
+                                            color: Colors.grey.shade700,
+                                            size: 80,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                            )),
+                        const ReusableTitleWidget(title: 'Trending Movies'),
+                        Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 8.0),
+                            child: SizedBox(
+                              height: 150,
+                              width: double.infinity,
+                              child: ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: 5,
+                                itemBuilder: (context, index) {
+                                  return Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Column(
+                                      children: [
+                                        ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                          child: Icon(
+                                            Icons.movie,
+                                            color: Colors.grey.shade700,
+                                            size: 80,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                            )),
+                        const ReusableTitleWidget(title: 'Trending Movies'),
+                        Padding(
+                            padding:
+                                const EdgeInsets.symmetric(horizontal: 8.0),
+                            child: SizedBox(
+                              height: 150,
+                              width: double.infinity,
+                              child: ListView.builder(
+                                scrollDirection: Axis.horizontal,
+                                itemCount: 5,
+                                itemBuilder: (context, index) {
+                                  return Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Column(
+                                      children: [
+                                        ClipRRect(
+                                          borderRadius:
+                                              BorderRadius.circular(10),
+                                          child: Icon(
+                                            Icons.movie,
+                                            color: Colors.grey.shade700,
+                                            size: 80,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                            )),
+                        const ReusableTitleWidget(title: 'Trending Movies'),
+                      ],
+                    ));
               }
+
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -223,15 +321,24 @@ class _MyHomePageState extends State<MyHomePage> {
                                   children: [
                                     ClipRRect(
                                       borderRadius: BorderRadius.circular(10),
-                                      child: Image.network(
-                                        imagePath +
-                                            trendingMovies['results'][index]
-                                                    ['backdrop_path']
-                                                .toString(),
-                                        width: 100,
-                                        height: 120,
-                                        fit: BoxFit.cover,
-                                      ),
+                                      child: trendingMovies['results'][index]
+                                                  ['backdrop_path'] !=
+                                              null
+                                          ? Image.network(
+                                              imagePath +
+                                                  trendingMovies['results']
+                                                              [index]
+                                                          ['backdrop_path']
+                                                      .toString(),
+                                              width: 100,
+                                              height: 120,
+                                              fit: BoxFit.cover,
+                                            )
+                                          : Icon(
+                                              Icons.movie,
+                                              size: 100,
+                                              color: Colors.grey.shade800,
+                                            ),
                                     ),
                                     const SizedBox(height: 7),
                                     ReusableTextWidget(

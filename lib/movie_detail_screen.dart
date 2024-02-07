@@ -1,18 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:movie_pp/provider/movie_provider.dart';
 import 'package:movie_pp/widgets/reusableTextWidget.dart';
 import 'package:movie_pp/widgets/reusableTitleWidget.dart';
+import 'package:provider/provider.dart';
 
 class MovieDetailScreen extends StatelessWidget {
-  const MovieDetailScreen(
+  MovieDetailScreen(
       {super.key, required this.movieTitle, this.movie, this.allSimilarMovies});
   final String movieTitle;
   final movie;
-  final String imagePath = 'https://image.tmdb.org/t/p/w500';
   final allSimilarMovies;
+  final String imagePath = 'https://image.tmdb.org/t/p/w500';
+
+  bool isFavourite = false;
 
   @override
   Widget build(BuildContext context) {
-    // print(allSimilarMovies);
+    final movieProvider = Provider.of<MovieProvider>(context);
     return Scaffold(
       backgroundColor: Colors.grey.shade900,
       appBar: AppBar(
@@ -20,6 +24,26 @@ class MovieDetailScreen extends StatelessWidget {
           movieTitle,
           style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
         ),
+        actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 12.0),
+            child: IconButton(
+                onPressed: () {
+                  print('Mark as favourite');
+                  isFavourite = !isFavourite;
+                  movieProvider.toggleFavourite(isFavourite);
+                  movieProvider.getFavouriteMovie(movie);
+                },
+                icon: Icon(
+                  movieProvider.favouriteMoviesList.contains(movie)
+                      ? Icons.favorite_outlined
+                      : Icons.favorite_outline,
+                  color: movieProvider.favouriteMoviesList.contains(movie)
+                      ? Colors.red
+                      : Colors.white70,
+                )),
+          )
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(
