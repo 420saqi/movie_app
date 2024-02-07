@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:movie_pp/widgets/reusableTextWidget.dart';
+import 'package:movie_pp/widgets/reusableTitleWidget.dart';
 
 class MovieDetailScreen extends StatelessWidget {
   const MovieDetailScreen(
@@ -10,24 +12,33 @@ class MovieDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    print(movie);
+    // print(allSimilarMovies);
     return Scaffold(
       backgroundColor: Colors.grey.shade900,
       appBar: AppBar(
-        title: Text(movieTitle),
+        title: Text(
+          movieTitle,
+          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w500),
+        ),
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
             SizedBox(
               height: 320,
-              child: Image.network(
-                imagePath + movie['backdrop_path'],
-                width: double.infinity,
-                fit: BoxFit.cover,
-              ),
+              child: movie['backdrop_path'] != null
+                  ? Image.network(
+                      imagePath + movie['backdrop_path'],
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    )
+                  : Icon(
+                      Icons.movie,
+                      size: 60,
+                      color: Colors.grey.shade800,
+                    ),
             ),
-            reusableRow('Title', value: movie['original_title']),
+            // reusableRow('Title', value: movie['original_title']),
             reusableRow('Release date', value: movie['release_date']),
             reusableRow('Language', value: movie['original_language']),
             reusableRow('Votes', value: movie['vote_count'].toString()),
@@ -41,12 +52,12 @@ class MovieDetailScreen extends StatelessWidget {
                     'Overview',
                     style: TextStyle(
                         fontWeight: FontWeight.w500,
-                        fontSize: 17,
+                        fontSize: 15,
                         color: Colors.white),
                   ),
                   Text(
                     movie['overview'],
-                    style: TextStyle(color: Colors.white),
+                    style: const TextStyle(color: Colors.white),
                   ),
                 ],
               ),
@@ -54,64 +65,78 @@ class MovieDetailScreen extends StatelessWidget {
 
             ///
             /// Similar Movies
-            //
-            reusableTitle('Similar Movies'),
 
-            Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                child: SizedBox(
-                  height: 260,
-                  width: double.infinity,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: allSimilarMovies['results'].length,
-                    itemBuilder: (context, index) {
-                      return Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: InkWell(
-                          onTap: () {
-                            print('goto movie detail screen');
-                            Navigator.pop(context);
-                            Navigator.of(context).push(MaterialPageRoute(
-                              builder: (context) => MovieDetailScreen(
-                                movieTitle: allSimilarMovies['results'][index]
-                                    ['title'],
-                                movie: allSimilarMovies['results'][index],
-                                allSimilarMovies: allSimilarMovies,
-                              ),
-                            ));
-                          },
-                          child: Column(
-                            children: [
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(10),
-                                child: Image.network(
-                                  imagePath +
-                                      allSimilarMovies['results'][index]
-                                              ['backdrop_path']
-                                          .toString(),
-                                  width: 120,
-                                  height: 150,
-                                  fit: BoxFit.cover,
+            if (allSimilarMovies != null)
+              Column(
+                children: [
+                  const ReusableTitleWidget(title: 'Similar Movies'),
+                  Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: SizedBox(
+                        height: 260,
+                        width: double.infinity,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: allSimilarMovies['results'].length,
+                          itemBuilder: (context, index) {
+                            return Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: InkWell(
+                                onTap: () {
+                                  print('goto movie detail screen');
+                                  Navigator.pop(context);
+                                  Navigator.of(context).push(MaterialPageRoute(
+                                    builder: (context) => MovieDetailScreen(
+                                      movieTitle: allSimilarMovies['results']
+                                          [index]['title'],
+                                      movie: allSimilarMovies['results'][index],
+                                      allSimilarMovies: allSimilarMovies,
+                                    ),
+                                  ));
+                                },
+                                child: Column(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(10),
+                                      child: allSimilarMovies['results'][index]
+                                                  ['backdrop_path'] !=
+                                              null
+                                          ? Image.network(
+                                              imagePath +
+                                                  allSimilarMovies['results']
+                                                              [index]
+                                                          ['backdrop_path']
+                                                      .toString(),
+                                              width: 120,
+                                              height: 150,
+                                              fit: BoxFit.cover,
+                                            )
+                                          : Icon(
+                                              Icons.movie,
+                                              size: 60,
+                                              color: Colors.grey.shade800,
+                                            ),
+                                    ),
+                                    ReusableTextWidget(
+                                      title: allSimilarMovies['results'][index]
+                                          ['original_title'],
+                                    ),
+                                    ReusableTextWidget(
+                                      title: allSimilarMovies['results'][index]
+                                          ['release_date'],
+                                    ),
+                                    ReusableTextWidget(
+                                        title:
+                                            '${allSimilarMovies['results'][index]['vote_count']} votes'),
+                                  ],
                                 ),
                               ),
-                              reusableTextWidget(
-                                allSimilarMovies['results'][index]
-                                    ['original_title'],
-                              ),
-                              reusableTextWidget(
-                                allSimilarMovies['results'][index]
-                                    ['release_date'],
-                              ),
-                              reusableTextWidget(
-                                  '${allSimilarMovies['results'][index]['vote_count']} votes'),
-                            ],
-                          ),
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
-                )),
+                      )),
+                ],
+              )
           ],
         ),
       ),
@@ -126,51 +151,18 @@ class MovieDetailScreen extends StatelessWidget {
         children: [
           Text(
             key,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-                fontWeight: FontWeight.w500, fontSize: 17, color: Colors.white),
+                fontWeight: FontWeight.w500, fontSize: 15, color: Colors.white),
           ),
+          const SizedBox(width: 5),
           Text(
             value,
-            style: TextStyle(color: Colors.white),
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(color: Colors.white),
           ),
         ],
       ),
     );
   }
-}
-
-Widget reusableTextWidget(String text) {
-  return SizedBox(
-    width: 120,
-    child: Padding(
-      padding: const EdgeInsets.only(top: 3.0),
-      child: Text(
-        text,
-        maxLines: 2,
-        textAlign: TextAlign.center,
-        style: const TextStyle(fontSize: 12, color: Colors.white),
-      ),
-    ),
-  );
-}
-
-Widget reusableTitle(String title) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8.0),
-    child: Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-          color: Colors.grey.shade800,
-          borderRadius: const BorderRadius.only(
-              topRight: Radius.circular(50), bottomRight: Radius.circular(50))),
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Text(
-          title,
-          style: const TextStyle(
-              fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
-        ),
-      ),
-    ),
-  );
 }

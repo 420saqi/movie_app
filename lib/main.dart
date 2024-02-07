@@ -1,11 +1,15 @@
 import 'dart:convert';
-
-import 'package:flutter/material.dart';
-
 import 'package:http/http.dart' as http;
 
+import 'package:flutter/material.dart';
+import 'package:movie_pp/filter_movie_screen.dart';
+
 import 'package:movie_pp/movie_detail_screen.dart';
+import 'package:movie_pp/provider/movie_provider.dart';
 import 'package:movie_pp/search_movie_screen.dart';
+import 'package:movie_pp/widgets/reusableTextWidget.dart';
+import 'package:movie_pp/widgets/reusableTitleWidget.dart';
+import 'package:provider/provider.dart';
 
 void main() {
   runApp(const MyApp());
@@ -18,14 +22,21 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-          appBarTheme: const AppBarTheme(
-              backgroundColor: Colors.deepPurple,
-              iconTheme: IconThemeData(color: Colors.white),
-              titleTextStyle: TextStyle(color: Colors.white, fontSize: 23))),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(
+          create: (context) => MovieProvider(),
+        ),
+      ],
+      child: MaterialApp(
+        title: 'Flutter Demo',
+        theme: ThemeData(
+            appBarTheme: const AppBarTheme(
+                backgroundColor: Colors.deepPurple,
+                iconTheme: IconThemeData(color: Colors.white),
+                titleTextStyle: TextStyle(color: Colors.white, fontSize: 23))),
+        home: const MyHomePage(title: 'Flutter Demo Home Page'),
+      ),
     );
   }
 }
@@ -40,7 +51,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  dynamic data;
+  dynamic trendingMovies;
 
   final String imagePath = 'https://image.tmdb.org/t/p/w500';
   dynamic year2024Movies;
@@ -48,7 +59,7 @@ class _MyHomePageState extends State<MyHomePage> {
   dynamic actionMovies;
   dynamic adventureMovies;
   dynamic animationMovies;
-  Future<Object?>? _incrementCounter() async {
+  Future<Object?>? getMoviesFromApi() async {
     const String base_url = "https://api.themoviedb.org/3";
 
     const endpoint = "/trending/movie/week";
@@ -59,7 +70,7 @@ class _MyHomePageState extends State<MyHomePage> {
           '$base_url$endpoint?api_key=828de4c89f0f46b09932b0a5bbb6dfd1&language=en_US&page=2'),
       // '$base_url$endpoint?api_key=828de4c89f0f46b09932b0a5bbb6dfd1&language=en_US&page=2&primary_release_year=2024'),
     );
-    data = jsonDecode(response.body);
+    trendingMovies = jsonDecode(response.body);
 
     ///
     ///
@@ -125,59 +136,73 @@ class _MyHomePageState extends State<MyHomePage> {
       animationMovies = genreMoviesDecodedData;
       // print(animationMovies);
     }
-    return data;
+    return trendingMovies;
   }
 
   @override
   void initState() {
-    _incrementCounter;
-
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
-    // print(data['results'][0]);
-
     return Scaffold(
         backgroundColor: Colors.grey.shade900,
         appBar: AppBar(
           centerTitle: true,
           leading: const Icon(Icons.movie),
           actions: [
+            IconButton(
+                onPressed: () {
+                  Navigator.of(context).push(MaterialPageRoute(
+                    builder: (context) => FilterMovieScreen(),
+                  ));
+                },
+                icon: const Icon(Icons.filter_alt_rounded)),
             Padding(
               padding: const EdgeInsets.only(right: 8.0),
               child: IconButton(
                   onPressed: () {
+                    List allMovies = [
+                      ...trendingMovies['results'],
+                      ...year2023Movies['results'],
+                      ...year2024Movies['results'],
+                      ...actionMovies['results'],
+                      ...adventureMovies['results'],
+                      ...animationMovies['results'],
+                    ];
                     Navigator.of(context).push(MaterialPageRoute(
-                      builder: (context) => SearchMovieScreen(),
+                      builder: (context) =>
+                          SearchMovieScreen(getAllMovies: allMovies),
                     ));
                   },
                   icon: const Icon(Icons.search)),
-            )
+            ),
           ],
           title: const Text('SR Movies Co'),
         ),
         body: SingleChildScrollView(
           child: FutureBuilder(
+            future: getMoviesFromApi(),
             builder: (context, snapshot) {
               if (snapshot.data.toString() == 'null') {
-                return const Center(child: CircularProgressIndicator());
+                return const Center(
+                  child: CircularProgressIndicator(),
+                );
               }
-
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // trending movies
-                  reusableTitle('Trending Movies'),
+                  const ReusableTitleWidget(title: 'Trending Movies'),
                   Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8.0),
                       child: SizedBox(
-                        height: 260,
+                        height: 230,
                         width: double.infinity,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
-                          itemCount: data['results'].length,
+                          itemCount: trendingMovies['results'].length,
                           itemBuilder: (context, index) {
                             return Padding(
                               padding: const EdgeInsets.all(8.0),
@@ -187,10 +212,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
                                   Navigator.of(context).push(MaterialPageRoute(
                                     builder: (context) => MovieDetailScreen(
-                                      movieTitle: data['results'][index]
-                                          ['title'],
-                                      movie: data['results'][index],
-                                      allSimilarMovies: data,
+                                      movieTitle: trendingMovies['results']
+                                          [index]['title'],
+                                      movie: trendingMovies['results'][index],
+                                      allSimilarMovies: trendingMovies,
                                     ),
                                   ));
                                 },
@@ -200,22 +225,29 @@ class _MyHomePageState extends State<MyHomePage> {
                                       borderRadius: BorderRadius.circular(10),
                                       child: Image.network(
                                         imagePath +
-                                            data['results'][index]
+                                            trendingMovies['results'][index]
                                                     ['backdrop_path']
                                                 .toString(),
-                                        width: 120,
-                                        height: 150,
+                                        width: 100,
+                                        height: 120,
                                         fit: BoxFit.cover,
                                       ),
                                     ),
-                                    reusableTextWidget(
-                                      data['results'][index]['original_title'],
+                                    const SizedBox(height: 7),
+                                    ReusableTextWidget(
+                                      fontSize: 11,
+                                      title: trendingMovies['results'][index]
+                                          ['original_title'],
                                     ),
-                                    reusableTextWidget(
-                                      data['results'][index]['release_date'],
+                                    ReusableTextWidget(
+                                      fontSize: 11,
+                                      title: trendingMovies['results'][index]
+                                          ['release_date'],
                                     ),
-                                    reusableTextWidget(
-                                        '${data['results'][index]['vote_count']} votes'),
+                                    ReusableTextWidget(
+                                        fontSize: 11,
+                                        title:
+                                            '${trendingMovies['results'][index]['vote_count']} votes'),
                                   ],
                                 ),
                               ),
@@ -227,11 +259,11 @@ class _MyHomePageState extends State<MyHomePage> {
                   ///
                   /// 2024
                   //
-                  reusableTitle('2024'),
+                  const ReusableTitleWidget(title: '2024'),
                   Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8.0),
                       child: SizedBox(
-                        height: 260,
+                        height: 230,
                         width: double.infinity,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
@@ -261,21 +293,22 @@ class _MyHomePageState extends State<MyHomePage> {
                                             year2024Movies['results'][index]
                                                     ['backdrop_path']
                                                 .toString(),
-                                        width: 120,
-                                        height: 150,
+                                        width: 100,
+                                        height: 120,
                                         fit: BoxFit.cover,
                                       ),
                                     ),
-                                    reusableTextWidget(
-                                      year2024Movies['results'][index]
+                                    ReusableTextWidget(
+                                      title: year2024Movies['results'][index]
                                           ['original_title'],
                                     ),
-                                    reusableTextWidget(
-                                      year2024Movies['results'][index]
+                                    ReusableTextWidget(
+                                      title: year2024Movies['results'][index]
                                           ['release_date'],
                                     ),
-                                    reusableTextWidget(
-                                        '${year2024Movies['results'][index]['vote_count']} votes'),
+                                    ReusableTextWidget(
+                                        title:
+                                            '${year2024Movies['results'][index]['vote_count']} votes'),
                                   ],
                                 ),
                               ),
@@ -288,11 +321,11 @@ class _MyHomePageState extends State<MyHomePage> {
                   ///
                   /// 2023
                   //
-                  reusableTitle('2023'),
+                  const ReusableTitleWidget(title: '2023'),
                   Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8.0),
                       child: SizedBox(
-                        height: 260,
+                        height: 230,
                         width: double.infinity,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
@@ -322,21 +355,22 @@ class _MyHomePageState extends State<MyHomePage> {
                                             year2023Movies['results'][index]
                                                     ['backdrop_path']
                                                 .toString(),
-                                        width: 120,
-                                        height: 150,
+                                        width: 100,
+                                        height: 120,
                                         fit: BoxFit.cover,
                                       ),
                                     ),
-                                    reusableTextWidget(
-                                      year2023Movies['results'][index]
+                                    ReusableTextWidget(
+                                      title: year2023Movies['results'][index]
                                           ['original_title'],
                                     ),
-                                    reusableTextWidget(
-                                      year2023Movies['results'][index]
+                                    ReusableTextWidget(
+                                      title: year2023Movies['results'][index]
                                           ['release_date'],
                                     ),
-                                    reusableTextWidget(
-                                        '${year2023Movies['results'][index]['vote_count']} votes'),
+                                    ReusableTextWidget(
+                                        title:
+                                            '${year2023Movies['results'][index]['vote_count']} votes'),
                                   ],
                                 ),
                               ),
@@ -349,11 +383,11 @@ class _MyHomePageState extends State<MyHomePage> {
                   ///
                   /// ACTION
                   //
-                  reusableTitle('Action'),
+                  const ReusableTitleWidget(title: 'Action'),
                   Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8.0),
                       child: SizedBox(
-                        height: 260,
+                        height: 230,
                         width: double.infinity,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
@@ -383,21 +417,22 @@ class _MyHomePageState extends State<MyHomePage> {
                                             actionMovies['results'][index]
                                                     ['backdrop_path']
                                                 .toString(),
-                                        width: 120,
-                                        height: 150,
+                                        width: 100,
+                                        height: 120,
                                         fit: BoxFit.cover,
                                       ),
                                     ),
-                                    reusableTextWidget(
-                                      actionMovies['results'][index]
+                                    ReusableTextWidget(
+                                      title: actionMovies['results'][index]
                                           ['original_title'],
                                     ),
-                                    reusableTextWidget(
-                                      actionMovies['results'][index]
+                                    ReusableTextWidget(
+                                      title: actionMovies['results'][index]
                                           ['release_date'],
                                     ),
-                                    reusableTextWidget(
-                                        '${actionMovies['results'][index]['vote_count']} votes'),
+                                    ReusableTextWidget(
+                                        title:
+                                            '${actionMovies['results'][index]['vote_count']} votes'),
                                   ],
                                 ),
                               ),
@@ -410,11 +445,11 @@ class _MyHomePageState extends State<MyHomePage> {
                   ///
                   /// ADVENTURE
                   //
-                  reusableTitle('Adventure'),
+                  const ReusableTitleWidget(title: 'Adventure'),
                   Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8.0),
                       child: SizedBox(
-                        height: 260,
+                        height: 230,
                         width: double.infinity,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
@@ -444,21 +479,22 @@ class _MyHomePageState extends State<MyHomePage> {
                                             adventureMovies['results'][index]
                                                     ['backdrop_path']
                                                 .toString(),
-                                        width: 120,
-                                        height: 150,
+                                        width: 100,
+                                        height: 120,
                                         fit: BoxFit.cover,
                                       ),
                                     ),
-                                    reusableTextWidget(
-                                      adventureMovies['results'][index]
+                                    ReusableTextWidget(
+                                      title: adventureMovies['results'][index]
                                           ['original_title'],
                                     ),
-                                    reusableTextWidget(
-                                      adventureMovies['results'][index]
+                                    ReusableTextWidget(
+                                      title: adventureMovies['results'][index]
                                           ['release_date'],
                                     ),
-                                    reusableTextWidget(
-                                        '${adventureMovies['results'][index]['vote_count']} votes'),
+                                    ReusableTextWidget(
+                                        title:
+                                            '${adventureMovies['results'][index]['vote_count']} votes'),
                                   ],
                                 ),
                               ),
@@ -471,11 +507,11 @@ class _MyHomePageState extends State<MyHomePage> {
                   ///
                   /// genre 18 animation
                   //
-                  reusableTitle('Animation'),
+                  const ReusableTitleWidget(title: 'Animation'),
                   Padding(
                       padding: const EdgeInsets.symmetric(horizontal: 8.0),
                       child: SizedBox(
-                        height: 260,
+                        height: 230,
                         width: double.infinity,
                         child: ListView.builder(
                           scrollDirection: Axis.horizontal,
@@ -505,21 +541,22 @@ class _MyHomePageState extends State<MyHomePage> {
                                             animationMovies['results'][index]
                                                     ['backdrop_path']
                                                 .toString(),
-                                        width: 120,
-                                        height: 150,
+                                        width: 100,
+                                        height: 120,
                                         fit: BoxFit.cover,
                                       ),
                                     ),
-                                    reusableTextWidget(
-                                      animationMovies['results'][index]
+                                    ReusableTextWidget(
+                                      title: animationMovies['results'][index]
                                           ['original_title'],
                                     ),
-                                    reusableTextWidget(
-                                      animationMovies['results'][index]
+                                    ReusableTextWidget(
+                                      title: animationMovies['results'][index]
                                           ['release_date'],
                                     ),
-                                    reusableTextWidget(
-                                        '${animationMovies['results'][index]['vote_count']} votes'),
+                                    ReusableTextWidget(
+                                        title:
+                                            '${animationMovies['results'][index]['vote_count']} votes'),
                                   ],
                                 ),
                               ),
@@ -530,44 +567,9 @@ class _MyHomePageState extends State<MyHomePage> {
                 ],
               );
             },
-            future: _incrementCounter(),
           ),
         ));
   }
 }
 
-Widget reusableTitle(String title) {
-  return Padding(
-    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8.0),
-    child: Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-          color: Colors.grey.shade800,
-          borderRadius: const BorderRadius.only(
-              topRight: Radius.circular(50), bottomRight: Radius.circular(50))),
-      child: Padding(
-        padding: const EdgeInsets.all(8.0),
-        child: Text(
-          title,
-          style: const TextStyle(
-              fontWeight: FontWeight.bold, fontSize: 16, color: Colors.white),
-        ),
-      ),
-    ),
-  );
-}
-
-Widget reusableTextWidget(String text) {
-  return SizedBox(
-    width: 120,
-    child: Padding(
-      padding: const EdgeInsets.only(top: 3.0),
-      child: Text(
-        text,
-        maxLines: 2,
-        textAlign: TextAlign.center,
-        style: const TextStyle(fontSize: 12, color: Colors.white),
-      ),
-    ),
-  );
-}
+// 589
