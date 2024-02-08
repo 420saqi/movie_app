@@ -5,6 +5,23 @@ class MovieProvider with ChangeNotifier {
   List get favouriteMoviesList => _favouriteMoviesList;
   bool _isFavourite = false;
   bool get isFavourite => _isFavourite;
+  final List<String> _searchHistory = [];
+  List<String> get searchHistory => _searchHistory;
+  bool _showHistory = false;
+  bool get showHistory => _showHistory;
+
+  void showHistoryFunction(show) {
+    _showHistory = show;
+    notifyListeners();
+  }
+
+  void getSearchedItem(String movieTitle) {
+    if (_searchHistory.contains(movieTitle)) {
+      return;
+    }
+    _searchHistory.add(movieTitle);
+    notifyListeners();
+  }
 
   void toggleFavourite(favourite) {
     _isFavourite = favourite;
